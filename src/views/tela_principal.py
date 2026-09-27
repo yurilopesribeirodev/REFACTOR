@@ -203,24 +203,23 @@ class TelaPrincipal(ctk.CTk):
     # ---------- CARREGAMENTO / ATUALIZAÇÃO DE DADOS ----------
 
     def _carregar_tudo(self):
-        operacoes = self.operacao_repo.listar_todas()
+      operacoes_cronologicas = self.operacao_repo.listar_todas(ordem_cronologica=True)
+      operacoes_para_exibir = self.operacao_repo.listar_todas(ordem_cronologica=False)
 
-        self.carteira = Carteira()
-        for operacao in operacoes:
-            self.carteira.registrar(operacao)
+      self.carteira = Carteira()
+      for operacao in operacoes_cronologicas:
+          self.carteira.registrar(operacao)
 
-        # busca cada cotação UMA VEZ e guarda em cache, evitando
-        # chamadas repetidas à API ao trocar de aba/gráfico
-        self.precos_atuais = {}
-        for posicao in self.carteira.listar_posicoes():
-            info = self.cotacao_service.buscar_cotacao(posicao.ativo.ticker)
-            self.precos_atuais[posicao.ativo.ticker] = (
-                info["preco_atual"] if info else posicao.preco_medio
-            )
+      self.precos_atuais = {}
+      for posicao in self.carteira.listar_posicoes():
+          info = self.cotacao_service.buscar_cotacao(posicao.ativo.ticker)
+          self.precos_atuais[posicao.ativo.ticker] = (
+              info["preco_atual"] if info else posicao.preco_medio
+          )
 
-        self._atualizar_tabela_carteira()
-        self._atualizar_tabela_lancamentos(operacoes)
-        self._atualizar_grafico()
+      self._atualizar_tabela_carteira()
+      self._atualizar_tabela_lancamentos(operacoes_para_exibir)
+      self._atualizar_grafico()
 
     def _atualizar_tabela_carteira(self):
         for item in self.tabela_carteira.get_children():
@@ -421,5 +420,5 @@ class TelaPrincipal(ctk.CTk):
     # ---------- AÇÕES ----------
 
     def _abrir_cadastro(self):
-        janela = TelaCadastroOperacao(self, ao_salvar=self._carregar_tudo)
-        janela.grab_set()
+      janela = TelaCadastroOperacao(self, ao_salvar=self._carregar_tudo, carteira=self.carteira)
+      janela.grab_set()

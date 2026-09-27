@@ -16,13 +16,14 @@ from views.estilo import (
 
 
 class TelaCadastroOperacao(ctk.CTkToplevel):
-    def __init__(self, master, ao_salvar):
+    def __init__(self, master, ao_salvar, carteira):
         super().__init__(master)
         self.title("Nova operação")
         self.geometry("420x560")
         self.resizable(False, False)
         self.configure(fg_color=COR_FUNDO)
         self.ao_salvar = ao_salvar
+        self.carteira = carteira          # <- guarda a referência
 
         self.ativo_repo = AtivoRepositorio()
         self.operacao_repo = OperacaoRepositorio()
@@ -100,6 +101,21 @@ class TelaCadastroOperacao(ctk.CTkToplevel):
             messagebox.showerror("Erro", "Quantidade e preço devem ser números válidos")
             return
 
+        tipo = TipoOperacao(self.tipo_var.get())
+
+        # VALIDA SALDO ANTES DE QUALQUER CHAMADA À API OU AO BANCO
+        if tipo == TipoOperacao.VENDA:
+            posicao_atual = self.carteira.posicoes.get(ticker)
+            quantidade_disponivel = posicao_atual.quantidade if posicao_atual else 0
+
+            if quantidade > quantidade_disponivel:
+                messagebox.showerror(
+                    "Erro",
+                    f"Você tem {quantidade_disponivel} unidades de {ticker}, "
+                    f"não é possível vender {quantidade}"
+                )
+                return
+
         self.botao_cadastrar.configure(state="disabled", text="Verificando...")
         self.update()
 
@@ -114,7 +130,6 @@ class TelaCadastroOperacao(ctk.CTkToplevel):
             ativo = Ativo(ticker, info["nome"])
             self.ativo_repo.salvar(ativo)
 
-            tipo = TipoOperacao(self.tipo_var.get())
             operacao = Operacao(
                 ativo=ativo, tipo=tipo, quantidade=quantidade,
                 preco=preco, data=date.today()

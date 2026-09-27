@@ -17,13 +17,15 @@ class OperacaoRepositorio:
         conexao.commit()
         conexao.close()
 
-    def listar_todas(self) -> list[Operacao]:
+    def listar_todas(self, ordem_cronologica=True) -> list[Operacao]:
         conexao = obter_conexao()
-        linhas = conexao.execute("""
+
+        ordenacao = "ASC" if ordem_cronologica else "DESC"
+        linhas = conexao.execute(f"""
             SELECT o.id, o.ticker, a.nome, o.tipo, o.quantidade, o.preco, o.data
             FROM operacoes o
             JOIN ativos a ON a.ticker = o.ticker
-            ORDER BY o.data DESC, o.id DESC
+            ORDER BY o.data {ordenacao}, o.id {ordenacao}
         """).fetchall()
         conexao.close()
 
@@ -42,3 +44,5 @@ class OperacaoRepositorio:
         conexao.execute("DELETE FROM operacoes WHERE id = ?", (id_operacao,))
         conexao.commit()
         conexao.close()
+
+        
